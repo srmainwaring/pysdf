@@ -8,10 +8,28 @@ from xml.etree.ElementTree import ParseError
 import xml.dom.minidom
 import glob
 
-from tf.transformations import *
+
+import numpy as np
 
 from pysdf.naming import *
 from pysdf.conversions import *
+
+# from tf.transformations import *
+
+def identity_matrix():
+  return np.identity(4)
+
+def concatenate_matrices(*matrices):
+  M = matrices[0]
+  for x in matrices[1:]:
+    M = np.matmul(M, x)
+  return M
+
+def inverse_matrix(matrix):
+  return np.linalg.inv(matrix)
+
+# from tf.transformations import *
+
 
 models_paths = [os.path.expanduser('~/.gazebo/models/')]
 
@@ -148,7 +166,7 @@ def model_from_include(parent, include_node):
 def homogeneous_times_vector(homogeneous, vector):
   vector_as_hom = identity_matrix()
   vector_as_hom[:3,3] = vector.T
-  res = numpy.dot(homogeneous, vector_as_hom)
+  res = np.dot(homogeneous, vector_as_hom)
   return res[:3,3].T 
 
 
@@ -333,7 +351,7 @@ class Model(SpatialEntity):
       self.name = kwargs_name
 
     # External pose offset (from <include>)
-    self.pose = numpy.dot(kwargs.get('pose', identity_matrix()), self.pose)
+    self.pose = np.dot(kwargs.get('pose', identity_matrix()), self.pose)
 
 
   def from_tree(self, node, **kwargs):
@@ -675,7 +693,7 @@ class Axis(object):
   def __init__(self, joint, **kwargs):
     self.joint = joint
     self.version = self.joint.parent_model.version
-    self.xyz = numpy.array([0, 0, 0])
+    self.xyz = np.array([0, 0, 0])
     self.lower_limit = 0
     self.upper_limit = 0
     self.effort_limit = 0
@@ -696,7 +714,7 @@ class Axis(object):
     if node.tag != 'axis' and node.tag != 'axis2':
       print('Invalid node of type %s instead of axis(2). Aborting.' % node.tag)
       return
-    self.xyz = numpy.array(get_tag(node, 'xyz').split())
+    self.xyz = np.array(get_tag(node, 'xyz').split())
     self.use_parent_model_frame = bool(get_tag(node, 'use_parent_model_frame'))
     limitnode = get_node(node, 'limit')
     if limitnode == None:
@@ -712,7 +730,7 @@ class Axis(object):
     if (self.version <= 1.4) or (self.version >= 1.5 and self.use_parent_model_frame): # SDF 1.4 axis is specified in model frame
       rotation_modelCBTjoint = rotation_only(modelCBTjoint)
       xyz_joint = homogeneous_times_vector(rotation_modelCBTjoint, self.xyz)
-      xyz_norm = numpy.linalg.norm(xyz_joint)
+      xyz_norm = np.linalg.norm(xyz_joint)
       if xyz_norm != 0.0:
         xyz_joint /= xyz_norm
       elif self.joint.urdf_type == 'fixed':

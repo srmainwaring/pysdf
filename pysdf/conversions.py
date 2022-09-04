@@ -1,10 +1,63 @@
 from __future__ import print_function
 
 import numbers
+import numpy as np
 
-from tf.transformations import *
 from geometry_msgs.msg import Pose
 
+# from tf.transformations import *
+
+from transforms3d import affines
+from transforms3d import euler
+from transforms3d import quaternions
+
+def translation_from_matrix(matrix):
+  T, R, Z, S = affines.decompose(matrix)
+  return T
+
+def quaternion_from_matrix(matrix):
+  T, R, Z, S = affines.decompose(matrix)
+  return quaternions.mat2quat(R)
+
+def euler_from_matrix(matrix, axes='sxyz'):
+  T, R, Z, S = affines.decompose(matrix)
+  return euler.mat2euler(R, axes=axes)
+
+def translation_matrix(direction):
+  T = direction
+  R = np.identity(3)
+  Z = np.ones((3))
+  H = affines.compose(T, R, Z)
+  return H
+
+def quaternion_matrix(q):
+  T = np.zeros((3))
+  R = quaternions.quat2mat(q)
+  Z = np.ones((3))
+  H = affines.compose(T, R, Z)
+  return H
+
+def concatenate_matrices(*matrices):
+  M = matrices[0]
+  for x in matrices[1:]:
+    M = np.matmul(M, x)
+  return M
+
+def euler_matrix(ai, aj, ak, axes='sxyz'):
+  T = np.zeros((3))
+  R = euler.euler2mat(ai, aj, ak, axes)
+  Z = np.ones((3))
+  H = affines.compose(T, R, Z)
+  return H
+
+def compose_matrix(scale=None, shear=None, angles=None, translate=None, perspective=None):
+  T = translate
+  R = euler.euler2mat(angles, axes='sxyz')
+  Z = np.ones((3))
+  H = affines.compose(T, R, Z)
+  return H
+
+# from tf.transformations import *
 
 
 def rounded(val):
@@ -13,7 +66,7 @@ def rounded(val):
   elif isinstance(val, numbers.Number):
     return int(round(val,6) * 1e5) / 1.0e5
   else:
-    return numpy.array([rounded(v) for v in val])
+    return np.array([rounded(v) for v in val])
 
 
 def homogeneous2translation_quaternion(homogeneous):
@@ -56,7 +109,7 @@ def pose_msg2homogeneous(pose):
 
 
 def array2string(array):
-  return numpy.array_str(array).strip('[]. ').replace('. ', ' ')
+  return np.array_str(array).strip('[]. ').replace('. ', ' ')
 
 
 def homogeneous2tq_string(homogeneous):
