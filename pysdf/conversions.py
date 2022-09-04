@@ -52,7 +52,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 
 def compose_matrix(scale=None, shear=None, angles=None, translate=None, perspective=None):
   T = translate
-  R = euler.euler2mat(angles, axes='sxyz')
+  R = euler.euler2mat(*angles, axes='sxyz')
   Z = np.ones((3))
   H = affines.compose(T, R, Z)
   return H
